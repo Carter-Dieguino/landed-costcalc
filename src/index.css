@@ -1,0 +1,35 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #080810;
+  --bg2: #0d0d1a;
+  --bg3: #111122;
+  --border: #1c1c30;
+  --border2: #242438;
+  --green: #6effa0;
+  --green-dim: #6effa020;
+  --green-mid: #6effa060;
+  --blue: #5eb8ff;
+  --amber: #ffb830;
+  --purple: #b48aff;
+  --red: #ff6b6b;
+  --cyan: #3ef0d0;
+  --text: #dde2ef;
+  --text2: #8892a4;
+  --text3: #4a5168;
+  --mono: 'DM Mono', 'Courier New', monospace;
+  --display: 'Syne', sans-serif;
+}
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+
+button { cursor: pointer; }
