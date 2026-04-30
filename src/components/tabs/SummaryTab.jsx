@@ -162,8 +162,20 @@ export default function SummaryTab() {
             <div style={{ padding: "14px 18px" }}>
               <SummaryMetric label="Utilidad bruta operativa" usd={costs.grossProfit} mxn={costs.grossProfit * fx} color="var(--accent)" note="Margen sobre costo + contingencia. No incluye impuestos ni comisiones." />
               <SummaryMetric label="Utilidad despues de comisiones" usd={costs.netAfterCommissions} mxn={costs.netAfterCommissions * fx} color="var(--accent-blue)" note="Resta pagos a vendedores o partners." />
-              <SummaryMetric label="Carga fiscal estimada" usd={costs.estimatedTaxBurden} mxn={costs.estimatedTaxBurden * fx} color="var(--danger)" note="ISR + PTU orientativos." />
+              <SummaryMetric label="Carga fiscal estimada" usd={costs.estimatedTaxBurden} mxn={costs.estimatedTaxBurden * fx} color="var(--danger)" note="ISR + PTU + retenciones extranjero + IVA Netflix − IVA exportación recuperable." />
               <SummaryMetric label="Utilidad neta estimada" usd={costs.estimatedNet} mxn={costs.estimatedNet * fx} color="var(--accent-alt)" note="Despues de comisiones e impuestos estimados." />
+            </div>
+          </SectionCard>
+
+          <SectionCard>
+            <CatHeader label="Desglose carga fiscal del período" hint={`${(costs.extranjeroRetencionPeriodoUSD + costs.ivaImportDigitalPeriodoUSD - costs.ivaExportRecuperablePeriodoUSD) >= 0 ? "Aumenta" : "Reduce"} la carga`} />
+            <div style={{ padding: "14px 18px" }}>
+              <SummaryMetric label="ISR estimado" usd={costs.estimatedISR} mxn={costs.estimatedISR * fx} color="var(--danger)" />
+              <SummaryMetric label="PTU estimada" usd={costs.estimatedPTU} mxn={costs.estimatedPTU * fx} color="var(--danger)" />
+              <SummaryMetric label="Retención extranjero (período)" usd={costs.extranjeroRetencionPeriodoUSD} mxn={costs.extranjeroRetencionPeriodoUSD * fx} color="var(--warning)" note="Si pagas a OpenAI/AWS/Stripe Inc desde MX" />
+              <SummaryMetric label="IVA Netflix tax (período)" usd={costs.ivaImportDigitalPeriodoUSD} mxn={costs.ivaImportDigitalPeriodoUSD * fx} color="var(--accent-blue)" note="Auto-acumulación 16% · si proveedor sin RFC MX" />
+              <SummaryMetric label="IVA exportación recuperable (período)" usd={-costs.ivaExportRecuperablePeriodoUSD} mxn={-costs.ivaExportRecuperablePeriodoUSD * fx} color="var(--accent)" note="Recuperación SAT 6-9 meses · resta de carga fiscal" />
+              <SummaryMetric label="Total carga fiscal" usd={costs.estimatedTaxBurden} mxn={costs.estimatedTaxBurden * fx} color="var(--danger)" />
             </div>
           </SectionCard>
 

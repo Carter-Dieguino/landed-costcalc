@@ -8,7 +8,7 @@ import { OFICINA } from "../data/oficina.js";
 import { ADMIN } from "../data/admin.js";
 import { BENEFICIOS } from "../data/beneficios.js";
 import { MOVILIDAD } from "../data/movilidad.js";
-import { REGIMENES, getCargaSocialFactor, NOM_037 } from "../data/fiscal.js";
+import { REGIMENES, getCargaSocialFactor, NOM_037, RETENCIONES_EXTRANJERO } from "../data/fiscal.js";
 import {
   DEFAULT_FX, DEFAULT_PROJECT, DEFAULT_SELLER,
   FX_API_URL, CONFIG_VERSION, MODE_OPTIONS, TABS, emptyObject,
@@ -289,6 +289,17 @@ export function CalcProvider({ children }) {
     const hourlyCostUSD = monthlyUSD / safeHours;
     const hourlyClientUSD = hourlyCostUSD * (1 + margin / 100);
 
+    // ─── Cargas fiscales adicionales (Fase 3) ──────────────────────────────
+    // Retención obligatoria sobre pago a extranjero (mensual recurrente)
+    const concepto = RETENCIONES_EXTRANJERO.find((r) => r.id === extranjeroConcepto) || RETENCIONES_EXTRANJERO[0];
+    const tasaRet = extranjeroTratadoUSA ? concepto.tratadoUSA : concepto.general;
+    const extranjeroRetencionMensualUSD = (extranjeroPagoUSD || 0) * tasaRet;
+    // Netflix tax: auto-acumulación 16% si proveedor sin RFC MX (cash out aunque acreditable)
+    const ivaImportDigitalMensualUSD = ivaImportDigital ? (extranjeroPagoUSD || 0) * 0.16 : 0;
+    // IVA acreditable recuperable si exportas servicios a USD: aprox 16% de gastos MX-IVA-bearing
+    const ivaCreditableBaseMensualUSD = adminUSD + oficinaUSD + benefUSD + movilUSD;
+    const ivaExportRecuperableMensualUSD = ivaExportacion ? ivaCreditableBaseMensualUSD * 0.16 : 0;
+
     const projectBase = monthlyUSD * months;
     const withCont = projectBase * (1 + contingency / 100);
     const withMargin = withCont * (1 + margin / 100);
@@ -298,7 +309,15 @@ export function CalcProvider({ children }) {
       .reduce((sum, s) => sum + ((s.appliesToNet ? withCont : withMargin) * s.commPct) / 100, 0);
     const estimatedISR = grossProfit * selectedRegimen.isrEfectivo;
     const estimatedPTU = Object.values(teamCount).some((c) => c > 0) ? grossProfit * 0.1 : 0;
-    const estimatedTaxBurden = estimatedISR + estimatedPTU;
+    // Cargas fiscales adicionales escaladas al horizonte del proyecto
+    const extranjeroRetencionPeriodoUSD = extranjeroRetencionMensualUSD * months;
+    const ivaImportDigitalPeriodoUSD = ivaImportDigitalMensualUSD * months;
+    const ivaExportRecuperablePeriodoUSD = ivaExportRecuperableMensualUSD * months;
+    const estimatedTaxBurden =
+      estimatedISR + estimatedPTU
+      + extranjeroRetencionPeriodoUSD
+      + ivaImportDigitalPeriodoUSD
+      - ivaExportRecuperablePeriodoUSD;
     const netAfterCommissions = grossProfit - totalCommUSD;
     const estimatedNet = netAfterCommissions - estimatedTaxBurden;
 
@@ -309,6 +328,10 @@ export function CalcProvider({ children }) {
       hourlyCostUSD, hourlyClientUSD,
       projectBase, withCont, withMargin, grossProfit, totalCommUSD,
       estimatedISR, estimatedPTU, estimatedTaxBurden, netAfterCommissions, estimatedNet,
+      // Fase 3 — fiscal avanzado mensual y por periodo
+      extranjeroRetencionMensualUSD, ivaImportDigitalMensualUSD, ivaExportRecuperableMensualUSD,
+      extranjeroRetencionPeriodoUSD, ivaImportDigitalPeriodoUSD, ivaExportRecuperablePeriodoUSD,
+      retencionTasa: tasaRet,
     };
   }, [
     mode, hoursPerMonth, fx, margin, months, contingency,
@@ -319,6 +342,8 @@ export function CalcProvider({ children }) {
     aiOn, aiUsage, customAI,
     equiposOn, equiposQty, oficinaOn, oficinaQty, adminOn, adminQty, benefOn, benefQty, movilOn, movilQty,
     sellers, selectedRegimen.isrEfectivo,
+    extranjeroConcepto, extranjeroTratadoUSA, extranjeroPagoUSD,
+    ivaImportDigital, ivaExportacion,
   ]);
 
   // ─── Reset ────────────────────────────────────────────────────────────────

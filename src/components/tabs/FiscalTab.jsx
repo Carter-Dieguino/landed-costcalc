@@ -114,17 +114,20 @@ export default function FiscalTab() {
               Aplicar tratado MX-USA
             </label>
           </div>
-          {(() => {
-            const concepto = RETENCIONES_EXTRANJERO.find((r) => r.id === extranjeroConcepto);
-            const tasa = extranjeroTratadoUSA ? concepto.tratadoUSA : concepto.general;
-            const retencion = (extranjeroPagoUSD || 0) * tasa;
-            return (
-              <>
-                <SummaryMetric label={`Retención aplicable (${(tasa * 100).toFixed(1)}%)`} usd={retencion} mxn={retencion * fx} color="var(--warning)" note={concepto.note} />
-                <SummaryMetric label="IVA importación digital (Netflix tax)" usd={ivaImportDigital ? (extranjeroPagoUSD || 0) * 0.16 : 0} mxn={ivaImportDigital ? (extranjeroPagoUSD || 0) * 0.16 * fx : 0} color="var(--accent-blue)" note="Auto-acumulación 16% si proveedor sin RFC MX" />
-              </>
-            );
-          })()}
+          <SummaryMetric
+            label={`Retención mensual aplicable (${(costs.retencionTasa * 100).toFixed(1)}%)`}
+            usd={costs.extranjeroRetencionMensualUSD}
+            mxn={costs.extranjeroRetencionMensualUSD * fx}
+            color="var(--warning)"
+            note="Ya descontada en utilidad neta del Resumen"
+          />
+          <SummaryMetric
+            label="IVA importación digital (Netflix tax) mensual"
+            usd={costs.ivaImportDigitalMensualUSD}
+            mxn={costs.ivaImportDigitalMensualUSD * fx}
+            color="var(--accent-blue)"
+            note="Auto-acumulación 16% · acreditable pero impacta cash flow"
+          />
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "var(--text-2)" }}>
             <input type="checkbox" checked={ivaImportDigital} onChange={(e) => setIvaImportDigital(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
             Activar auto-acumulación IVA importación (proveedor sin RFC MX)
@@ -145,7 +148,13 @@ export default function FiscalTab() {
           {ivaExportacion ? (
             <>
               <SummaryMetric label="IVA aplicado al cliente" usd={0} mxn={0} color="var(--accent)" note="Tasa 0% — cliente extranjero no paga IVA" />
-              <SummaryMetric label="IVA acreditable estimado (16% del costo MX)" usd={(costs.humanUSD + costs.adminUSD + costs.oficinaUSD) * 0.16} mxn={(costs.humanUSD + costs.adminUSD + costs.oficinaUSD) * 0.16 * fx} color="var(--accent-blue)" note="Recuperable vía devolución SAT" />
+              <SummaryMetric
+                label="IVA acreditable mensual recuperable"
+                usd={costs.ivaExportRecuperableMensualUSD}
+                mxn={costs.ivaExportRecuperableMensualUSD * fx}
+                color="var(--accent-blue)"
+                note="16% de admin + oficina + benef + movil · ya bonificada en utilidad neta"
+              />
             </>
           ) : (
             <SummaryMetric label="IVA trasladado al cliente" usd={costs.withMargin * 0.16} mxn={costs.withMargin * 0.16 * fx} color="var(--warning)" note="16% sobre precio final · cliente MX" />
