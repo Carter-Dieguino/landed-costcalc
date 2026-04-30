@@ -12,9 +12,11 @@ import { REGIMENES, getCargaSocialFactor, NOM_037 } from "../data/fiscal.js";
 import {
   DEFAULT_FX, DEFAULT_PROJECT, DEFAULT_SELLER,
   FX_API_URL, CONFIG_VERSION, MODE_OPTIONS, TABS, emptyObject,
+  STORAGE_DEBOUNCE_MS,
 } from "./constants.js";
 import { getRoleMonthlyMXN, getStackCost, getAICost, sumCatalog } from "./cost.js";
 import { downloadJSON } from "./export.js";
+import { loadFromStorage, saveToStorage, clearStorage } from "./storage.js";
 
 const CalcContext = createContext(null);
 
@@ -24,77 +26,95 @@ export function useCalc() {
   return ctx;
 }
 
+// Hidrata el estado inicial desde localStorage (corre una vez al cargar)
+const persisted = loadFromStorage();
+const ini = (path, fallback) => {
+  if (!persisted) return fallback;
+  const segments = path.split(".");
+  let cur = persisted;
+  for (const seg of segments) {
+    if (cur == null || typeof cur !== "object") return fallback;
+    cur = cur[seg];
+  }
+  return cur === undefined ? fallback : cur;
+};
+const iniBool = (path, fallback) => { const v = ini(path, fallback); return typeof v === "boolean" ? v : fallback; };
+const iniNum  = (path, fallback) => { const v = ini(path, fallback); return typeof v === "number"  ? v : fallback; };
+const iniStr  = (path, fallback) => { const v = ini(path, fallback); return typeof v === "string"  ? v : fallback; };
+const iniObj  = (path)           => { const v = ini(path, undefined); return v && typeof v === "object" && !Array.isArray(v) ? v : emptyObject; };
+const iniArr  = (path, fallback) => { const v = ini(path, undefined); return Array.isArray(v) ? v : fallback; };
+
 export function CalcProvider({ children }) {
   // ─── UI / mode ────────────────────────────────────────────────────────────
-  const [mode, setMode] = useState("project");
-  const [hoursPerMonth, setHoursPerMonth] = useState(160);
+  const [mode, setMode] = useState(() => iniStr("params.mode", "project"));
+  const [hoursPerMonth, setHoursPerMonth] = useState(() => iniNum("params.hoursPerMonth", 160));
   const [tab, setTab] = useState("human");
   const [themeMode, setThemeMode] = useState("system");
 
   // ─── Params globales ──────────────────────────────────────────────────────
-  const [fx, setFx] = useState(DEFAULT_FX);
-  const [fxAuto, setFxAuto] = useState(true);
+  const [fx, setFx] = useState(() => iniNum("params.fx", DEFAULT_FX));
+  const [fxAuto, setFxAuto] = useState(() => iniBool("params.fxAuto", true));
   const [fxStatus, setFxStatus] = useState("idle");
   const [fxUpdatedAt, setFxUpdatedAt] = useState(null);
-  const [months, setMonths] = useState(3);
-  const [margin, setMargin] = useState(30);
-  const [contingency, setContingency] = useState(15);
-  const [project, setProject] = useState(DEFAULT_PROJECT);
+  const [months, setMonths] = useState(() => iniNum("params.months", 3));
+  const [margin, setMargin] = useState(() => iniNum("params.margin", 30));
+  const [contingency, setContingency] = useState(() => iniNum("params.contingency", 15));
+  const [project, setProject] = useState(() => ({ ...DEFAULT_PROJECT, ...(persisted?.project || {}) }));
   const fileInputRef = useRef(null);
 
   // ─── Carga social MX ──────────────────────────────────────────────────────
-  const [includeCargaSocial, setIncludeCargaSocial] = useState(true);
-  const [mxState, setMxState] = useState("cdmx");
-  const [aguinaldo30, setAguinaldo30] = useState(false);
-  const [includePTUFactor, setIncludePTUFactor] = useState(true);
-  const [includeNOM037, setIncludeNOM037] = useState(false);
-  const [nom037MXN, setNom037MXN] = useState(NOM_037.defaultMXN);
+  const [includeCargaSocial, setIncludeCargaSocial] = useState(() => iniBool("flags.includeCargaSocial", true));
+  const [mxState, setMxState] = useState(() => iniStr("flags.mxState", "cdmx"));
+  const [aguinaldo30, setAguinaldo30] = useState(() => iniBool("flags.aguinaldo30", false));
+  const [includePTUFactor, setIncludePTUFactor] = useState(() => iniBool("flags.includePTUFactor", true));
+  const [includeNOM037, setIncludeNOM037] = useState(() => iniBool("flags.includeNOM037", false));
+  const [nom037MXN, setNom037MXN] = useState(() => iniNum("flags.nom037MXN", NOM_037.defaultMXN));
 
   // ─── Catálogos: estados on/qty/usage ──────────────────────────────────────
-  const [teamCount, setTeamCount] = useState(emptyObject);
-  const [teamSeniority, setTeamSeniority] = useState(emptyObject);
-  const [infraOn, setInfraOn] = useState(emptyObject);
-  const [infraQty, setInfraQty] = useState(emptyObject);
-  const [stackOn, setStackOn] = useState(emptyObject);
-  const [stackQty, setStackQty] = useState(emptyObject);
-  const [stackVariable, setStackVariable] = useState(emptyObject);
-  const [aiOn, setAiOn] = useState(emptyObject);
-  const [aiUsage, setAiUsage] = useState(emptyObject);
-  const [equiposOn, setEquiposOn] = useState(emptyObject);
-  const [equiposQty, setEquiposQty] = useState(emptyObject);
-  const [oficinaOn, setOficinaOn] = useState(emptyObject);
-  const [oficinaQty, setOficinaQty] = useState(emptyObject);
-  const [adminOn, setAdminOn] = useState(emptyObject);
-  const [adminQty, setAdminQty] = useState(emptyObject);
-  const [benefOn, setBenefOn] = useState(emptyObject);
-  const [benefQty, setBenefQty] = useState(emptyObject);
-  const [movilOn, setMovilOn] = useState(emptyObject);
-  const [movilQty, setMovilQty] = useState(emptyObject);
+  const [teamCount, setTeamCount] = useState(() => iniObj("team.teamCount"));
+  const [teamSeniority, setTeamSeniority] = useState(() => iniObj("team.teamSeniority"));
+  const [infraOn, setInfraOn] = useState(() => iniObj("infra.infraOn"));
+  const [infraQty, setInfraQty] = useState(() => iniObj("infra.infraQty"));
+  const [stackOn, setStackOn] = useState(() => iniObj("stack.stackOn"));
+  const [stackQty, setStackQty] = useState(() => iniObj("stack.stackQty"));
+  const [stackVariable, setStackVariable] = useState(() => iniObj("stack.stackVariable"));
+  const [aiOn, setAiOn] = useState(() => iniObj("ai.aiOn"));
+  const [aiUsage, setAiUsage] = useState(() => iniObj("ai.aiUsage"));
+  const [equiposOn, setEquiposOn] = useState(() => iniObj("equipos.equiposOn"));
+  const [equiposQty, setEquiposQty] = useState(() => iniObj("equipos.equiposQty"));
+  const [oficinaOn, setOficinaOn] = useState(() => iniObj("oficina.oficinaOn"));
+  const [oficinaQty, setOficinaQty] = useState(() => iniObj("oficina.oficinaQty"));
+  const [adminOn, setAdminOn] = useState(() => iniObj("admin.adminOn"));
+  const [adminQty, setAdminQty] = useState(() => iniObj("admin.adminQty"));
+  const [benefOn, setBenefOn] = useState(() => iniObj("benef.benefOn"));
+  const [benefQty, setBenefQty] = useState(() => iniObj("benef.benefQty"));
+  const [movilOn, setMovilOn] = useState(() => iniObj("movil.movilOn"));
+  const [movilQty, setMovilQty] = useState(() => iniObj("movil.movilQty"));
 
-  const [sellers, setSellers] = useState([DEFAULT_SELLER]);
+  const [sellers, setSellers] = useState(() => iniArr("sellers", [DEFAULT_SELLER]));
 
   // ─── Fiscal MX + avanzado ─────────────────────────────────────────────────
-  const [fiscalRegimen, setFiscalRegimen] = useState("pm_general");
-  const [isrIncome, setIsrIncome] = useState(500000);
-  const [extranjeroPagoUSD, setExtranjeroPagoUSD] = useState(0);
-  const [extranjeroTratadoUSA, setExtranjeroTratadoUSA] = useState(true);
-  const [extranjeroConcepto, setExtranjeroConcepto] = useState("regalia_software");
-  const [ivaImportDigital, setIvaImportDigital] = useState(false);
-  const [ivaExportacion, setIvaExportacion] = useState(false);
-  const [usEstadoSel, setUsEstadoSel] = useState("us_ca");
-  const [usSalaryUSD, setUsSalaryUSD] = useState(120000);
+  const [fiscalRegimen, setFiscalRegimen] = useState(() => iniStr("fiscal.fiscalRegimen", "pm_general"));
+  const [isrIncome, setIsrIncome] = useState(() => iniNum("fiscal.isrIncome", 500000));
+  const [extranjeroPagoUSD, setExtranjeroPagoUSD] = useState(() => iniNum("fiscal.extranjeroPagoUSD", 0));
+  const [extranjeroTratadoUSA, setExtranjeroTratadoUSA] = useState(() => iniBool("fiscal.extranjeroTratadoUSA", true));
+  const [extranjeroConcepto, setExtranjeroConcepto] = useState(() => iniStr("fiscal.extranjeroConcepto", "regalia_software"));
+  const [ivaImportDigital, setIvaImportDigital] = useState(() => iniBool("fiscal.ivaImportDigital", false));
+  const [ivaExportacion, setIvaExportacion] = useState(() => iniBool("fiscal.ivaExportacion", false));
+  const [usEstadoSel, setUsEstadoSel] = useState(() => iniStr("fiscal.usEstadoSel", "us_ca"));
+  const [usSalaryUSD, setUsSalaryUSD] = useState(() => iniNum("fiscal.usSalaryUSD", 120000));
 
   // ─── Custom items ─────────────────────────────────────────────────────────
-  const [customHumans, setCustomHumans] = useState([]);
+  const [customHumans, setCustomHumans] = useState(() => iniArr("team.customHumans", []));
   const [customHumanLabel, setCustomHumanLabel] = useState("");
   const [customHumanCost, setCustomHumanCost] = useState(0);
-  const [customInfra, setCustomInfra] = useState([]);
+  const [customInfra, setCustomInfra] = useState(() => iniArr("infra.customInfra", []));
   const [customInfraLabel, setCustomInfraLabel] = useState("");
   const [customInfraCost, setCustomInfraCost] = useState(0);
-  const [customStack, setCustomStack] = useState([]);
+  const [customStack, setCustomStack] = useState(() => iniArr("stack.customStack", []));
   const [customStackLabel, setCustomStackLabel] = useState("");
   const [customStackCost, setCustomStackCost] = useState(0);
-  const [customAI, setCustomAI] = useState([]);
+  const [customAI, setCustomAI] = useState(() => iniArr("ai.customAI", []));
   const [customAILabel, setCustomAILabel] = useState("");
   const [customAICost, setCustomAICost] = useState(0);
 
@@ -345,36 +365,31 @@ export function CalcProvider({ children }) {
     setMxState("cdmx"); setAguinaldo30(false); setIncludePTUFactor(true);
     setIncludeNOM037(false); setNom037MXN(NOM_037.defaultMXN);
     ["human", "equipos", "oficina", "movil", "infra", "stack", "ai", "benef", "admin", "comision", "fiscal", "summary"].forEach(resetTab);
+    clearStorage();
   }, [resetTab]);
 
   // ─── JSON config import/export ────────────────────────────────────────────
-  const exportConfig = useCallback(() => {
-    const payload = {
-      version: CONFIG_VERSION,
-      exportedAt: new Date().toISOString(),
-      project,
-      params: { mode, fx, fxAuto, months, margin, contingency, hoursPerMonth },
-      flags: { includeCargaSocial, mxState, aguinaldo30, includePTUFactor, includeNOM037, nom037MXN },
-      team: { teamCount, teamSeniority, customHumans },
-      infra: { infraOn, infraQty, customInfra },
-      stack: { stackOn, stackQty, stackVariable, customStack },
-      ai: { aiOn, aiUsage, customAI },
-      equipos: { equiposOn, equiposQty },
-      oficina: { oficinaOn, oficinaQty },
-      admin:   { adminOn, adminQty },
-      benef:   { benefOn, benefQty },
-      movil:   { movilOn, movilQty },
-      sellers,
-      fiscal: {
-        fiscalRegimen, isrIncome,
-        extranjeroPagoUSD, extranjeroTratadoUSA, extranjeroConcepto,
-        ivaImportDigital, ivaExportacion,
-        usEstadoSel, usSalaryUSD,
-      },
-    };
-    const slug = (project.name || "config").toLowerCase().replace(/\s+/g, "-");
-    downloadJSON(`costcalc-${slug}-${Date.now()}.json`, payload);
-  }, [
+  const buildSnapshot = useCallback(() => ({
+    project,
+    params: { mode, fx, fxAuto, months, margin, contingency, hoursPerMonth },
+    flags: { includeCargaSocial, mxState, aguinaldo30, includePTUFactor, includeNOM037, nom037MXN },
+    team: { teamCount, teamSeniority, customHumans },
+    infra: { infraOn, infraQty, customInfra },
+    stack: { stackOn, stackQty, stackVariable, customStack },
+    ai: { aiOn, aiUsage, customAI },
+    equipos: { equiposOn, equiposQty },
+    oficina: { oficinaOn, oficinaQty },
+    admin:   { adminOn, adminQty },
+    benef:   { benefOn, benefQty },
+    movil:   { movilOn, movilQty },
+    sellers,
+    fiscal: {
+      fiscalRegimen, isrIncome,
+      extranjeroPagoUSD, extranjeroTratadoUSA, extranjeroConcepto,
+      ivaImportDigital, ivaExportacion,
+      usEstadoSel, usSalaryUSD,
+    },
+  }), [
     mode, hoursPerMonth, project, fx, fxAuto, months, margin, contingency,
     includeCargaSocial, mxState, aguinaldo30, includePTUFactor, includeNOM037, nom037MXN,
     teamCount, teamSeniority, customHumans,
@@ -386,6 +401,29 @@ export function CalcProvider({ children }) {
     extranjeroPagoUSD, extranjeroTratadoUSA, extranjeroConcepto,
     ivaImportDigital, ivaExportacion, usEstadoSel, usSalaryUSD,
   ]);
+
+  // Auto-save: debounced persistence to localStorage
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!hydratedRef.current) {
+      // Skip the initial render — we just hydrated from storage,
+      // no need to write back the same snapshot.
+      hydratedRef.current = true;
+      return;
+    }
+    const handle = setTimeout(() => saveToStorage(buildSnapshot()), STORAGE_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [buildSnapshot]);
+
+  const exportConfig = useCallback(() => {
+    const payload = {
+      version: CONFIG_VERSION,
+      exportedAt: new Date().toISOString(),
+      ...buildSnapshot(),
+    };
+    const slug = (project.name || "config").toLowerCase().replace(/\s+/g, "-");
+    downloadJSON(`costcalc-${slug}-${Date.now()}.json`, payload);
+  }, [buildSnapshot, project.name]);
 
   const importConfig = useCallback((file) => {
     const reader = new FileReader();

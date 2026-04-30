@@ -3,6 +3,8 @@ export const DEFAULT_PROJECT = { name: "", client: "", version: "1.0", descripti
 export const DEFAULT_SELLER = { id: 1, name: "", role: "Vendedor / BDR", commPct: 10, appliesToNet: false };
 export const FX_API_URL = "https://open.er-api.com/v6/latest/USD";
 export const CONFIG_VERSION = "2.0";
+export const STORAGE_KEY = "costcalc:state:v2";
+export const STORAGE_DEBOUNCE_MS = 500;
 
 export const MODE_OPTIONS = [
   { value: "freelancer", label: "Freelancer", desc: "Tarifa por hora basada en costos personales + margen." },
