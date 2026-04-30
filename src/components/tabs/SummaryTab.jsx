@@ -1,6 +1,7 @@
 import { useCalc } from "../../lib/CalcContext.jsx";
 import { fmtUSD, fmtMXN } from "../../lib/format.js";
 import { exportTXT } from "../../lib/export.js";
+import { exportPDF } from "../../lib/exportPDF.js";
 import SectionCard from "../ui/SectionCard.jsx";
 import CatHeader from "../ui/CatHeader.jsx";
 import SummaryMetric from "../ui/SummaryMetric.jsx";
@@ -11,11 +12,16 @@ import ActionButton from "../ui/ActionButton.jsx";
 export default function SummaryTab() {
   const {
     mode, fx, costs, project, setProj,
-    months, margin, contingency,
+    months, margin, contingency, hoursPerMonth, mxState,
     teamCount, teamSeniority, customHumans,
     infraOn, infraQty, customInfra,
     stackOn, stackQty, stackVariable, customStack,
     aiOn, aiUsage, customAI,
+    equiposOn, equiposQty,
+    oficinaOn, oficinaQty,
+    adminOn, adminQty,
+    benefOn, benefQty,
+    movilOn, movilQty,
     sellers, selectedRegimen,
     triggerImport, exportConfig, fileInputRef, handleFileChange,
   } = useCalc();
@@ -56,6 +62,27 @@ export default function SummaryTab() {
                   sellers,
                   customHumans, customInfra, customStack, customAI,
                   fiscalLabel: selectedRegimen.label,
+                })
+              }
+              tone="subtle"
+            />
+            <ActionButton
+              label="Exportar .pdf"
+              onClick={() =>
+                exportPDF({
+                  project, costs, fx, mode, months, margin, contingency, hoursPerMonth,
+                  fiscalLabel: selectedRegimen.label, mxState,
+                  teamCount, teamSeniority,
+                  infraOn, infraQty,
+                  stackOn, stackQty, stackVariable,
+                  aiOn, aiUsage,
+                  equiposOn, equiposQty,
+                  oficinaOn, oficinaQty,
+                  adminOn, adminQty,
+                  benefOn, benefQty,
+                  movilOn, movilQty,
+                  customHumans, customInfra, customStack, customAI,
+                  sellers,
                 })
               }
               tone="accent"

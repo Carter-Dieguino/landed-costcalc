@@ -71,6 +71,17 @@ test('export JSON triggers a download with the project payload', async ({ page }
   expect(download.suggestedFilename()).toMatch(/^costcalc-test-project-\d+\.json$/);
 });
 
+test('export PDF triggers a PDF download (dynamic import)', async ({ page }) => {
+  await gotoFresh(page);
+  await page.getByRole('button', { name: /resumen/i }).click();
+  await page.getByPlaceholder(/Mi sistema \/ app/i).fill('PDF Test');
+
+  const downloadPromise = page.waitForEvent('download', { timeout: 15_000 });
+  await page.getByRole('button', { name: /Exportar \.pdf/i }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^estimacion-pdf-test-\d+\.pdf$/);
+});
+
 test('FX live indicator shows after auto-fetch', async ({ page }) => {
   await gotoFresh(page);
   await expect(page.getByRole('button', { name: /^LIVE$/i })).toBeVisible({ timeout: 5000 });
