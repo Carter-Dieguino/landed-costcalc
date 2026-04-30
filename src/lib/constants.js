@@ -19,18 +19,26 @@ export const THEME_OPTIONS = [
 ];
 
 export const TABS = [
-  { id: "human",    icon: "Equ",  label: "Capital Humano",  modes: ["freelancer", "project", "org"] },
-  { id: "equipos",  icon: "HW",   label: "Equipos",         modes: ["freelancer", "project", "org"] },
-  { id: "oficina",  icon: "Off",  label: "Oficina",         modes: ["freelancer", "project", "org"] },
-  { id: "movil",    icon: "Mov",  label: "Movilidad",       modes: ["freelancer", "project", "org"] },
-  { id: "infra",    icon: "Ops",  label: "Infra",           modes: ["freelancer", "project", "org"] },
-  { id: "stack",    icon: "SaaS", label: "Stack",           modes: ["freelancer", "project", "org"] },
-  { id: "ai",       icon: "AI",   label: "IA & ML",         modes: ["freelancer", "project", "org"] },
-  { id: "benef",    icon: "Ben",  label: "Beneficios",      modes: ["project", "org"] },
-  { id: "admin",    icon: "Adm",  label: "Admin & Legal",   modes: ["freelancer", "project", "org"] },
-  { id: "comision", icon: "%",    label: "Comisiones",      modes: ["project", "org"] },
-  { id: "fiscal",   icon: "SAT",  label: "Fiscal",          modes: ["freelancer", "project", "org"] },
-  { id: "summary",  icon: "Sum",  label: "Resumen",         modes: ["freelancer", "project", "org"] },
+  { id: "human",    icon: "Equ",  label: "Capital Humano",  group: "people", modes: ["freelancer", "project", "org"] },
+  { id: "benef",    icon: "Ben",  label: "Beneficios",      group: "people", modes: ["project", "org"] },
+  { id: "equipos",  icon: "HW",   label: "Equipos",         group: "phys",   modes: ["freelancer", "project", "org"] },
+  { id: "oficina",  icon: "Off",  label: "Oficina",         group: "phys",   modes: ["freelancer", "project", "org"] },
+  { id: "movil",    icon: "Mov",  label: "Movilidad",       group: "phys",   modes: ["freelancer", "project", "org"] },
+  { id: "infra",    icon: "Ops",  label: "Infra",           group: "tech",   modes: ["freelancer", "project", "org"] },
+  { id: "stack",    icon: "SaaS", label: "Stack",           group: "tech",   modes: ["freelancer", "project", "org"] },
+  { id: "ai",       icon: "AI",   label: "IA & ML",         group: "tech",   modes: ["freelancer", "project", "org"] },
+  { id: "admin",    icon: "Adm",  label: "Admin & Legal",   group: "biz",    modes: ["freelancer", "project", "org"] },
+  { id: "comision", icon: "%",    label: "Comisiones",      group: "biz",    modes: ["project", "org"] },
+  { id: "fiscal",   icon: "SAT",  label: "Fiscal",          group: "biz",    modes: ["freelancer", "project", "org"] },
+  { id: "summary",  icon: "Sum",  label: "Resumen",         group: "out",    modes: ["freelancer", "project", "org"] },
+];
+
+export const TAB_GROUPS = [
+  { id: "people", label: "Personas",   color: "var(--accent)" },
+  { id: "phys",   label: "Físico",     color: "var(--accent-blue)" },
+  { id: "tech",   label: "Tech",       color: "var(--warning)" },
+  { id: "biz",    label: "Negocio",    color: "var(--text-2)" },
+  { id: "out",    label: "Resultado",  color: "var(--accent-alt)" },
 ];
 
 export const USAGE_STEPS_BY_MODE = {

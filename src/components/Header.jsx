@@ -1,6 +1,6 @@
 import { useCalc } from "../lib/CalcContext.jsx";
 import { fmtUSD, fmtMXN } from "../lib/format.js";
-import { MODE_OPTIONS, TABS, THEME_OPTIONS } from "../lib/constants.js";
+import { MODE_OPTIONS, TABS, TAB_GROUPS, THEME_OPTIONS } from "../lib/constants.js";
 import NumericInput from "./ui/NumericInput.jsx";
 import SelectInput from "./ui/SelectInput.jsx";
 import ActionButton from "./ui/ActionButton.jsx";
@@ -108,23 +108,46 @@ export default function Header() {
         </div>
 
         <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", overflowX: "auto", gap: 4, paddingBottom: 2 }}>
-            {TABS.filter((t) => t.modes.includes(mode)).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setTab(item.id)}
-                style={{
-                  border: "none",
-                  background: tab === item.id ? "var(--surface-1)" : "transparent",
-                  color: tab === item.id ? "var(--accent)" : "var(--text-3)",
-                  padding: "9px 12px", borderRadius: 999,
-                  fontFamily: "var(--mono)", fontSize: 11, whiteSpace: "nowrap",
-                  boxShadow: tab === item.id ? "inset 0 0 0 1px var(--border)" : "none",
-                }}
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
+          <div style={{ display: "flex", overflowX: "auto", gap: 6, paddingBottom: 2, alignItems: "center" }}>
+            {TAB_GROUPS.map((group, gIndex) => {
+              const tabsInGroup = TABS.filter((t) => t.group === group.id && t.modes.includes(mode));
+              if (tabsInGroup.length === 0) return null;
+              return (
+                <div key={group.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {gIndex > 0 ? (
+                    <div
+                      aria-hidden
+                      style={{ width: 1, height: 18, background: "var(--border)", margin: "0 4px", flexShrink: 0 }}
+                    />
+                  ) : null}
+                  <span
+                    style={{
+                      fontSize: 8, letterSpacing: "0.16em", textTransform: "uppercase",
+                      color: group.color, opacity: 0.7, paddingRight: 4, whiteSpace: "nowrap", userSelect: "none",
+                    }}
+                  >
+                    {group.label}
+                  </span>
+                  {tabsInGroup.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setTab(item.id)}
+                      style={{
+                        border: "none",
+                        background: tab === item.id ? "var(--surface-1)" : "transparent",
+                        color: tab === item.id ? group.color : "var(--text-3)",
+                        padding: "9px 12px", borderRadius: 999,
+                        fontFamily: "var(--mono)", fontSize: 11, whiteSpace: "nowrap",
+                        boxShadow: tab === item.id ? `inset 0 0 0 1px ${group.color}` : "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
