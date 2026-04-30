@@ -30,8 +30,8 @@ npm run build
    - **Framework preset**: Vite
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-4. En el panel de *Custom domains* añade `landedlabs.com/calculadoraproyectos` (o el subdirectorio que quieras usar dentro de tu dominio). Sigue los pasos de Cloudflare para verificar el DNS y asignar el certificado.
-5. Crea una regla de redirección (Bulk Redirect o Page Rules) que apunte `https://costcalc-a7k.pages.dev` hacia `https://landedlabs.com/calculadoraproyectos` para que la única URL pública sea la del dominio propio.
+4. En el panel de *Custom domains* añade `calculadora.appstudiouniversal.com`. Cloudflare crea el CNAME automáticamente (la zona ya está en CF) y emite el certificado SSL en 1-3 minutos.
+5. Opcionalmente, crea una Bulk Redirect que apunte `https://costcalc-a7k.pages.dev` hacia `https://calculadora.appstudiouniversal.com` para que la única URL pública sea la del dominio propio.
 
 Alternativamente con Wrangler CLI (sin instalar global):
 ```bash
