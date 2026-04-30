@@ -429,6 +429,9 @@ export function CalcProvider({ children }) {
 
   // Auto-save: debounced persistence to localStorage
   const hydratedRef = useRef(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+
   useEffect(() => {
     if (!hydratedRef.current) {
       // Skip the initial render — we just hydrated from storage,
@@ -436,7 +439,12 @@ export function CalcProvider({ children }) {
       hydratedRef.current = true;
       return;
     }
-    const handle = setTimeout(() => saveToStorage(buildSnapshot()), STORAGE_DEBOUNCE_MS);
+    setIsDirty(true);
+    const handle = setTimeout(() => {
+      saveToStorage(buildSnapshot());
+      setLastSavedAt(Date.now());
+      setIsDirty(false);
+    }, STORAGE_DEBOUNCE_MS);
     return () => clearTimeout(handle);
   }, [buildSnapshot]);
 
@@ -565,6 +573,8 @@ export function CalcProvider({ children }) {
     costs,
     // actions
     resetTab, resetAll, exportConfig, importConfig,
+    // persistence indicator
+    lastSavedAt, isDirty,
     // legacy
     LEGACY_CARGA_SOCIAL: CARGA_SOCIAL_FACTOR,
   };

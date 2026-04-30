@@ -4,6 +4,7 @@ import { MODE_OPTIONS, TABS, TAB_GROUPS, THEME_OPTIONS } from "../lib/constants.
 import NumericInput from "./ui/NumericInput.jsx";
 import SelectInput from "./ui/SelectInput.jsx";
 import ActionButton from "./ui/ActionButton.jsx";
+import SaveIndicator from "./SaveIndicator.jsx";
 
 export default function Header() {
   const {
@@ -150,7 +151,8 @@ export default function Header() {
             })}
           </div>
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <SaveIndicator />
             <SelectInput value={themeMode} onChange={setThemeMode} options={THEME_OPTIONS} style={{ minWidth: 110 }} />
             <ActionButton label="Limpiar pestaña" onClick={() => resetTab(tab)} tone="subtle" />
             <ActionButton label="Limpiar todo" onClick={resetAll} tone="accent" />
